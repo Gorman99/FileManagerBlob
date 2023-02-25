@@ -3,13 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FileManagerBlob.Api.Controllers;
 
-
 [ApiController]
 [Route("[controller]")]
 public class FileMangerController : ControllerBase
 {
-
     private readonly IFileMangerService _fileMangerService;
+
     public FileMangerController(IFileMangerService fileMangerService)
     {
         _fileMangerService = fileMangerService;
@@ -21,6 +20,38 @@ public class FileMangerController : ControllerBase
         var result = await _fileMangerService.ListAsync();
 
         return Ok(result);
+    }
+
+    [HttpGet("download/{fileName}")]
+    public async Task<IActionResult> DownloadFile(string fileName)
+    {
+        var result = await _fileMangerService.DownloadAsync(fileName);
+
+        if (result == null)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, $"Unable to download file {fileName}");
+        }
+        else
+        {
+            return Ok(result);
+ 
+        }
+    }
+    
+    [HttpDelete("{fileName}")]
+    public async Task<IActionResult> DeleteFile(string fileName)
+    {
+        var result = await _fileMangerService.DeleteAsync(fileName);
+
+        if (result == null)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, result.Status);
+        }
+        else
+        {
+            return Ok(result);
+ 
+        }
     }
 
     [HttpPost]

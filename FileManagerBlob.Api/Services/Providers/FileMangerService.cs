@@ -59,14 +59,63 @@ public class FileMangerService : IFileMangerService
         return response;
     }
 
-    public Task<BlobDto> DownloadAsync(string blobFilename)
+    public async Task<BlobDownloadDto> DownloadAsync(string blobFilename)
     {
-        throw new NotImplementedException();
+        
+        var  blobContainer = _blobService.GetBlobContainerClient(_containerName);
+
+        try
+        {
+            // Get a reference to the blob uploaded earlier from the API in the container from configuration settings
+            BlobClient file = blobContainer.GetBlobClient(blobFilename);
+
+            // Check if the file exists in the container
+            if (await file.ExistsAsync())
+            {
+                var data = await file.OpenReadAsync();
+                Stream blobContent = data;
+
+                // Download the file details async
+                var content = await file.DownloadContentAsync();
+
+                // Add data to variables in order to return a BlobDto
+                string name = blobFilename;
+                string contentType = content.Value.Details.ContentType;
+
+                // Create new BlobDto with blob data from variables
+                return new BlobDownloadDto { Content = blobContent, Name = name, ContentType = contentType };
+            }
+        }
+        catch (RequestFailedException ex)
+            when(ex.ErrorCode == BlobErrorCode.BlobNotFound)
+        {
+            // Log error to console
+            _logger.LogError($"File {blobFilename} was not found.");
+        }
+
+        // File does not exist, return null and handle that in requesting method
+        return null;
     }
 
-    public Task<BlobResponseDto> DeleteAsync(string blobFilename)
+    public async Task<BlobResponseDto> DeleteAsync(string blobFilename)
     {
-        throw new NotImplementedException();
+        var blobContainer = _blobService.GetBlobContainerClient(_containerName);
+        try
+        {
+            var file =  blobContainer.GetBlobClient(blobFilename);
+
+            await file.DeleteAsync();
+        }
+        catch (RequestFailedException ex)
+            when (ex.ErrorCode == BlobErrorCode.BlobNotFound)
+        {
+            // File did not exist, log to console and return new response to requesting method
+            _logger.LogError($"File {blobFilename} was not found.");
+            return new BlobResponseDto { Error = true, Status = $"File with name {blobFilename} not found." };
+        }
+
+        // Return a new BlobResponseDto to the requesting method
+        return new BlobResponseDto { Error = false, Status = $"File: {blobFilename} has been successfully deleted." };
     }
 
     public async Task<List<BlobDto>> ListAsync()

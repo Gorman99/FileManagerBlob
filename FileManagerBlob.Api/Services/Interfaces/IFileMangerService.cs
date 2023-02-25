@@ -16,7 +16,7 @@ public interface IFileMangerService
     /// </summary>
     /// <param name="blobFilename">Filename</param>
     /// <returns>Blob</returns>
-    Task<BlobDto> DownloadAsync(string blobFilename);
+    Task<BlobDownloadDto> DownloadAsync(string blobFilename);
 
     /// <summary>
     /// This method deleted a file with the specified filename
